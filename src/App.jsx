@@ -8,6 +8,7 @@ import { CardView } from './CardView.tsx'
 import { Greeting } from './Greeting.tsx'
 import { DynamicListExample } from './DynamicListExample.tsx'
 import { MultipleInputsForm } from './MultipleInputsForm.tsx'
+import { FormSubmission } from './FormSubmission.tsx'
 
 
 
@@ -37,6 +38,11 @@ function App() {
       _____________________________________
       <h2>Multiple Input Form Example:</h2>
       <MultipleInputsForm />
+
+      <br />
+      _____________________________________
+      <h2>Form Submission Example:</h2>
+      <FormSubmission />
     </>
   )
 
