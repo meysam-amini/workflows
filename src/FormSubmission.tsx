@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function FormSubmission() {
 
@@ -25,6 +25,18 @@ export function FormSubmission() {
         setTimeout(() => setSubmited(false), 3000);
 
     }
+
+    useEffect(()=>{
+        //the action when dependency updates:
+        console.log('new value of the username:',formData.username)
+
+        //cleanup
+        return()=>{
+            console.log('cleanup in useEffect...')
+        }
+
+
+    },[formData.username]);
 
 
     return (
