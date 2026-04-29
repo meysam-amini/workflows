@@ -27,12 +27,18 @@ import {
   Plus
 } from 'lucide-react';
 
+/* =========================================================
+   1. VISUAL CONFIGURATION
+========================================================= */
 const NODE_CONFIG: Record<string, any> = {
   Trigger: { icon: <Zap size={16} />, headerBg: 'bg-indigo-50', iconColor: 'text-indigo-600', border: 'border-indigo-100' },
   Condition: { icon: <ShieldCheck size={16} />, headerBg: 'bg-orange-50', iconColor: 'text-orange-500', border: 'border-orange-100' },
   Task: { icon: <CheckCircle2 size={16} />, headerBg: 'bg-green-50', iconColor: 'text-green-600', border: 'border-green-100' },
 };
 
+/* =========================================================
+   2. CUSTOM NODE COMPONENT
+========================================================= */
 const WorkflowNode = ({ data, id }: any) => {
   const config = NODE_CONFIG[data.type] || NODE_CONFIG.Task;
 
@@ -56,7 +62,7 @@ const WorkflowNode = ({ data, id }: any) => {
           </div>
           <div className="relative flex items-center justify-end">
             <span className="mr-1 text-[8px] font-black text-red-600 bg-red-50 px-1 rounded border border-red-100 uppercase">N</span>
-            <Handle type="source" position={Position.Right} id="no" className="w-4 h-4 bg-red-500 border-2 border-white !static" />
+            <Handle type="source" position={Position.Right} id="no" className="w-4 h-4 bg-green-500 border-2 border-white !static" />
           </div>
         </div>
       ) : (
@@ -78,6 +84,9 @@ const WorkflowNode = ({ data, id }: any) => {
 
 const nodeTypes = { workflowNode: WorkflowNode };
 
+/* =========================================================
+   3. MAIN COMPONENT
+========================================================= */
 const Workflows = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -119,7 +128,32 @@ const Workflows = () => {
 
   const onSave = useCallback(() => {
     if (!rfInstance) return;
-    console.log("Full Flow Object:", rfInstance.toObject());
+    
+    // 1. Capture the full technical state (coordinates, styles, IDs)
+    const flowData = rfInstance.toObject();
+    
+    // 2. Build a logical map of the connections
+    const logicMap = flowData.edges.map(edge => {
+      const source = flowData.nodes.find(n => n.id === edge.source);
+      const target = flowData.nodes.find(n => n.id === edge.target);
+      
+      return {
+        connection: `${source?.data?.title} ➔ ${target?.data?.title}`,
+        from_id: edge.source,
+        to_id: edge.target,
+        via_handle: edge.sourceHandle || 'default',
+        metadata: {
+          sourceType: source?.data?.type,
+          targetType: target?.data?.type
+        }
+      };
+    });
+
+    console.log("--- WORKFLOW EXPORT ---");
+    console.log("1. Logical Connection Map:", logicMap);
+    console.log("2. Full Technical Object (Coordinates/Styles):", flowData);
+    
+    alert(`Exported ${logicMap.length} connections with full metadata.`);
   }, [rfInstance]);
 
   const onDeleteNode = useCallback((id: string) => {
@@ -175,7 +209,6 @@ const Workflows = () => {
   return (
     <div className="flex flex-col md:flex-row h-screen w-full bg-[#f8fafc] font-sans overflow-hidden">
       
-      {/* MAIN SECTION (Header + Content) */}
       <main className="flex-1 flex flex-col relative bg-white order-1 overflow-hidden">
         
         {/* HEADER */}
@@ -193,7 +226,7 @@ const Workflows = () => {
           </div>
         </header>
 
-        {/* MOBILE PALETTE (Immediately below Header on small screens) */}
+        {/* MOBILE PALETTE */}
         <aside className="md:hidden w-full border-b bg-white p-3 flex flex-row gap-2 overflow-x-auto z-[110] relative flex-shrink-0 shadow-sm">
           {['Trigger', 'Condition', 'Task'].map((type) => (
             <button 
@@ -206,7 +239,7 @@ const Workflows = () => {
           ))}
         </aside>
 
-        {/* PROPERTY DRAWER (Slides over the mobile palette and canvas) */}
+        {/* PROPERTY DRAWER */}
         <div 
           className={`fixed inset-x-0 top-0 bg-white border-b-4 border-indigo-500 shadow-2xl z-[120] transition-transform duration-500 ease-in-out ${activeNode ? 'translate-y-14 md:translate-y-16' : '-translate-y-full'}`} 
           style={{ height: window.innerWidth < 768 ? 'calc(100% - 3.5rem)' : '280px' }}
@@ -259,7 +292,7 @@ const Workflows = () => {
         </div>
       </main>
 
-      {/* DESKTOP SIDEBAR (Hidden on Mobile) */}
+      {/* DESKTOP SIDEBAR */}
       <aside className="hidden md:flex w-72 border-r bg-white p-6 flex-col justify-between shadow-xl z-50 order-first">
         <div className="flex flex-col gap-4">
           <h2 className="font-black text-slate-800 text-lg uppercase mb-2 tracking-tighter">Nodes</h2>
