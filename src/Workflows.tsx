@@ -23,7 +23,8 @@ import {
   X, 
   Trash2,
   Undo2,
-  Redo2 
+  Redo2,
+  Plus
 } from 'lucide-react';
 
 /* =========================================================
@@ -42,10 +43,10 @@ const WorkflowNode = ({ data, id }: any) => {
   const config = NODE_CONFIG[data.type] || NODE_CONFIG.Task;
 
   return (
-    <div className={`min-w-[260px] rounded-xl border-2 bg-white shadow-sm overflow-visible group ${data.selected ? 'border-indigo-500 ring-4 ring-indigo-50' : 'border-slate-200'}`}>
+    <div className={`min-w-[220px] md:min-w-[260px] rounded-xl border-2 bg-white shadow-sm group ${data.selected ? 'border-indigo-500 ring-4 ring-indigo-50' : 'border-slate-200'}`}>
       <button 
         onClick={(e) => { e.stopPropagation(); data.onDelete(id); }}
-        className="absolute -top-3 -right-3 p-1.5 bg-white border-2 border-red-100 text-red-500 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white z-[60]"
+        className="absolute -top-3 -right-3 p-1.5 bg-white border-2 border-red-100 text-red-500 rounded-full shadow-md md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white z-[60]"
       >
         <Trash2 size={14} />
       </button>
@@ -54,28 +55,28 @@ const WorkflowNode = ({ data, id }: any) => {
       <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-slate-300 border-2 border-white" />
 
       {data.type === 'Condition' ? (
-        <div className="absolute right-[-12px] top-1/2 -translate-y-1/2 flex flex-col gap-8 z-50">
+        <div className="absolute right-[-12px] top-1/2 -translate-y-1/2 flex flex-col gap-6 md:gap-8 z-50">
           <div className="relative flex items-center justify-end">
-            <span className="mr-2 text-[9px] font-black text-green-600 bg-green-50 px-1 rounded border border-green-100 uppercase">Yes</span>
+            <span className="mr-1 text-[8px] font-black text-green-600 bg-green-50 px-1 rounded border border-green-100 uppercase">Y</span>
             <Handle type="source" position={Position.Right} id="yes" className="w-4 h-4 bg-green-500 border-2 border-white !static" />
           </div>
           <div className="relative flex items-center justify-end">
-            <span className="mr-2 text-[9px] font-black text-red-600 bg-red-50 px-1 rounded border border-red-100 uppercase">No</span>
-            <Handle type="source" position={Position.Right} id="no" className="w-4 h-4 bg-green-500 border-2 border-white !static" />
+            <span className="mr-1 text-[8px] font-black text-red-600 bg-red-50 px-1 rounded border border-red-100 uppercase">N</span>
+            <Handle type="source" position={Position.Right} id="no" className="w-4 h-4 bg-red-500 border-2 border-white !static" />
           </div>
         </div>
       ) : (
         <Handle type="source" position={Position.Right} id="r" className="w-3 h-3 bg-slate-300 border-2 border-white" />
       )}
 
-      <div className={`flex items-center gap-3 px-4 py-3 border-b-2 ${config.headerBg} ${config.border}`}>
-        <div className={`p-1.5 rounded-lg bg-white shadow-sm ${config.iconColor}`}>{config.icon}</div>
-        <div className="flex-1 font-bold text-slate-800 text-sm truncate">{data.title || 'Step'}</div>
+      <div className={`flex items-center gap-2 md:gap-3 px-3 py-2 md:px-4 md:py-3 border-b-2 ${config.headerBg} ${config.border}`}>
+        <div className={`p-1 rounded-lg bg-white shadow-sm ${config.iconColor}`}>{config.icon}</div>
+        <div className="flex-1 font-bold text-slate-800 text-xs md:text-sm truncate">{data.title || 'Step'}</div>
       </div>
 
-      <div className="p-4 bg-white space-y-2">
-        <div className="text-[11px] text-slate-500 truncate italic">{data.description || 'No description...'}</div>
-        <div className="text-[11px] font-bold text-indigo-500">{data.executionDate || 'No date set'}</div>
+      <div className="p-3 md:p-4 bg-white space-y-1 md:space-y-2">
+        <div className="text-[10px] md:text-[11px] text-slate-500 truncate italic">{data.description || 'No description...'}</div>
+        <div className="text-[10px] md:text-[11px] font-bold text-indigo-500">{data.executionDate || 'No date set'}</div>
       </div>
     </div>
   );
@@ -131,31 +132,11 @@ const Workflows = () => {
     }
   }, [historyIndex, history, setNodes, setEdges]);
 
-  // --- SAVE & EXPORT LOGIC ---
+  // --- SAVE & LOGIC ---
   const onSave = useCallback(() => {
     if (!rfInstance) return;
-
-    // This captures EVERYTING: positions, types, data, and edge logic
-    const flowObject = rfInstance.toObject();
-
-    console.log("%c--- COMPLETE FLOW EXPORT (JSON READY) ---", "color: #10b981; font-weight: bold; font-size: 14px;");
-    console.log("Full Object:", flowObject);
-
-    console.group("Detailed Positioning & Data");
-    flowObject.nodes.forEach((node) => {
-      console.log(`[${node.id}] "${node.data.title}" at X: ${Math.round(node.position.x)}, Y: ${Math.round(node.position.y)}`);
-    });
-    console.groupEnd();
-
-    console.group("Connectivity Map");
-    flowObject.edges.forEach((edge) => {
-      const src = flowObject.nodes.find((n) => n.id === edge.source);
-      const tar = flowObject.nodes.find((n) => n.id === edge.target);
-      console.log(`${src?.data.title || edge.source} (${edge.sourceHandle || 'default'}) -> ${tar?.data.title || edge.target}`);
-    });
-    console.groupEnd();
-
-    // To load this back later: setNodes(flowObject.nodes); setEdges(flowObject.edges);
+    console.log("Full Flow Object:", rfInstance.toObject());
+    alert("Flow data exported to console.");
   }, [rfInstance]);
 
   // --- HANDLERS ---
@@ -170,122 +151,114 @@ const Workflows = () => {
 
   const onConnect = useCallback((params: Connection) => {
     let edgeColor = params.sourceHandle === 'yes' ? '#22c55e' : params.sourceHandle === 'no' ? '#ef4444' : '#94a3b8';
-    const newEdge = { 
+    const nextEdges = addEdge({ 
       ...params, 
       type: 'smoothstep', 
       label: params.sourceHandle?.toUpperCase(),
-      labelStyle: { fill: edgeColor, fontWeight: 700, fontSize: 10 },
       style: { stroke: edgeColor, strokeWidth: 3 },
       markerEnd: { type: MarkerType.ArrowClosed, color: edgeColor } 
-    };
-    const nextEdges = addEdge(newEdge, edges);
+    }, edges);
     takeSnapshot(nodes, nextEdges);
     setEdges(nextEdges);
   }, [nodes, edges, takeSnapshot, setEdges]);
 
+  const addNodeMobile = (type: string) => {
+    const newNode: Node = {
+      id: `node_${Date.now()}`,
+      type: 'workflowNode',
+      position: { x: 50, y: 50 },
+      data: { type, title: type, executionDate: '', description: '', onDelete: onDeleteNode },
+    };
+    const nextNodes = nodes.concat(newNode);
+    takeSnapshot(nextNodes, edges);
+    setNodes(nextNodes);
+  };
+
   const onDrop = useCallback((event: React.DragEvent) => {
     event.preventDefault();
-    if (!rfInstance) return;
-
     const type = event.dataTransfer.getData('application/reactflow');
+    if (!rfInstance || !type) return;
     const position = rfInstance.screenToFlowPosition({ x: event.clientX, y: event.clientY });
-
     const newNode: Node = {
       id: `node_${Date.now()}`,
       type: 'workflowNode',
       position,
       data: { type, title: type, executionDate: '', description: '', onDelete: onDeleteNode },
     };
-
     const nextNodes = nodes.concat(newNode);
     takeSnapshot(nextNodes, edges);
     setNodes(nextNodes);
   }, [rfInstance, nodes, edges, takeSnapshot, setNodes, onDeleteNode]);
 
   return (
-    <div className="flex h-screen w-full bg-[#f8fafc] font-sans overflow-hidden">
-      <aside className="w-72 border-r bg-white p-6 flex flex-col justify-between shadow-xl z-50">
-        <div>
-          <h2 className="font-black text-slate-800 text-lg uppercase mb-6 tracking-tighter">Node Palette</h2>
-          <div className="space-y-4">
-            {['Trigger', 'Condition', 'Task'].map((type) => (
-              <div 
-                key={type} 
-                draggable 
-                onDragStart={(e) => e.dataTransfer.setData('application/reactflow', type)} 
-                className="cursor-grab p-4 rounded-xl border-2 bg-slate-50 border-slate-100 font-bold text-slate-600 hover:border-indigo-300 transition-all"
-              >
-                {type} Node
-              </div>
-            ))}
-          </div>
+    <div className="flex flex-col md:flex-row h-screen w-full bg-[#f8fafc] font-sans overflow-hidden">
+      
+      {/* SIDEBAR / BOTTOM BAR */}
+      <aside className="w-full md:w-72 border-b md:border-b-0 md:border-r bg-white p-4 md:p-6 flex flex-row md:flex-col justify-between shadow-xl z-50 order-2 md:order-1">
+        <div className="flex flex-row md:flex-col gap-3 md:gap-4 overflow-x-auto md:overflow-visible w-full pb-2 md:pb-0">
+          <h2 className="hidden md:block font-black text-slate-800 text-lg uppercase mb-2 tracking-tighter">Nodes</h2>
+          {['Trigger', 'Condition', 'Task'].map((type) => (
+            <button 
+              key={type} 
+              draggable 
+              onDragStart={(e) => e.dataTransfer.setData('application/reactflow', type)}
+              onClick={() => { if(window.innerWidth < 768) addNodeMobile(type) }} 
+              className="flex-shrink-0 cursor-grab p-2 md:p-4 rounded-xl border-2 bg-slate-50 border-slate-100 font-bold text-xs md:text-sm text-slate-600 hover:border-indigo-300 transition-all flex items-center gap-2"
+            >
+              <Plus size={14} className="md:hidden"/> {type} Node
+            </button>
+          ))}
         </div>
 
-        <div className="border-t pt-6 space-y-4">
-          <p className="text-[10px] font-black text-slate-400 uppercase text-center tracking-widest">History</p>
-          <div className="flex gap-2">
-            <button onClick={undo} disabled={historyIndex <= 0} className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-100 font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-20 transition-all">
-              <Undo2 size={18} /> Undo
-            </button>
-            <button onClick={redo} disabled={historyIndex >= history.length - 1} className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-100 font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-20 transition-all">
-              <Redo2 size={18} /> Redo
-            </button>
-          </div>
+        <div className="hidden md:flex border-t pt-6 gap-2">
+          <button onClick={undo} disabled={historyIndex <= 0} className="flex-1 p-3 rounded-xl border-2 border-slate-100 disabled:opacity-20 transition-all flex justify-center"><Undo2 size={18} /></button>
+          <button onClick={redo} disabled={historyIndex >= history.length - 1} className="flex-1 p-3 rounded-xl border-2 border-slate-100 disabled:opacity-20 transition-all flex justify-center"><Redo2 size={18} /></button>
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col relative bg-white">
-        <header className="h-16 border-b bg-[#0f172a] text-white flex items-center justify-between px-8 z-50">
-          <h1 className="font-black tracking-tighter text-lg uppercase">Flow Builder</h1>
-          <button onClick={onSave} className="bg-indigo-600 hover:bg-indigo-500 px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors">
-            <Database size={16} /> Save & Log Full State
-          </button>
+      <main className="flex-1 flex flex-col relative bg-white order-1 md:order-2 overflow-hidden">
+        <header className="h-14 md:h-16 border-b bg-[#0f172a] text-white flex items-center justify-between px-4 md:px-8 z-50">
+          <h1 className="font-black tracking-tighter text-sm md:text-lg uppercase">Flow Builder</h1>
+          
+          <div className="flex items-center gap-2">
+            <div className="flex md:hidden gap-1 mr-2">
+              <button onClick={undo} disabled={historyIndex <= 0} className="p-2 rounded-lg bg-slate-800 border-none disabled:opacity-30 flex items-center"><Undo2 size={16}/></button>
+              <button onClick={redo} disabled={historyIndex >= history.length - 1} className="p-2 rounded-lg bg-slate-800 border-none disabled:opacity-30 flex items-center"><Redo2 size={16}/></button>
+            </div>
+            <button onClick={onSave} className="bg-indigo-600 hover:bg-indigo-500 px-3 md:px-6 py-1.5 md:py-2 rounded-lg font-bold text-xs md:text-sm flex items-center gap-2 transition-colors">
+              <Database size={14} /> <span className="hidden sm:inline">Save</span>
+            </button>
+          </div>
         </header>
 
-        {/* PROPERTIES PANEL */}
-        <div className={`absolute left-0 right-0 bg-white border-b-4 border-indigo-500 shadow-2xl z-40 transition-all duration-300 ${activeNode ? 'translate-y-16' : '-translate-y-full'}`} style={{ height: '280px' }}>
+        {/* PROPERTY OVERLAY */}
+        <div className={`fixed inset-0 md:absolute md:inset-auto md:left-0 md:right-0 bg-white border-b-4 border-indigo-500 shadow-2xl z-[100] transition-all duration-300 ${activeNode ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`} style={{ height: window.innerWidth < 768 ? '100%' : '280px', top: window.innerWidth < 768 ? '0' : 'auto' }}>
           {activeNode && (
-            <div className="p-8 max-w-6xl mx-auto flex flex-row gap-12 relative">
+            <div className="p-6 md:p-8 max-w-6xl mx-auto flex flex-col md:flex-row gap-6 md:gap-12 relative h-full overflow-y-auto">
               <button onClick={() => setSelectedNodeId(null)} className="absolute right-4 top-4 p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-600"><X size={20} /></button>
-              <div className="flex-1 space-y-6">
+              
+              <div className="flex-1 space-y-4 md:space-y-6 mt-4 md:mt-0">
                 <h2 className="font-black text-slate-800 text-xl uppercase italic">Edit {activeNode.data.type}</h2>
-                <div className="grid grid-cols-2 gap-8">
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-400 uppercase">Title</label>
-                    <input 
-                      onBlur={() => takeSnapshot()} 
-                      value={activeNode.data.title} 
-                      onChange={(e) => setNodes(nds => nds.map(n => n.id === selectedNodeId ? { ...n, data: { ...n.data, title: e.target.value } } : n))} 
-                      className="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-400 font-bold text-slate-700" 
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase">Title</label>
+                    <input onBlur={() => takeSnapshot()} value={activeNode.data.title} onChange={(e) => setNodes(nds => nds.map(n => n.id === selectedNodeId ? { ...n, data: { ...n.data, title: e.target.value } } : n))} className="w-full border-2 p-2 md:p-3 rounded-xl outline-none focus:border-indigo-400 font-bold text-slate-700 text-sm md:text-base" />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-400 uppercase">Date</label>
-                    <input 
-                      onBlur={() => takeSnapshot()}
-                      type="date" 
-                      value={activeNode.data.executionDate} 
-                      onChange={(e) => setNodes(nds => nds.map(n => n.id === selectedNodeId ? { ...n, data: { ...n.data, executionDate: e.target.value } } : n))} 
-                      className="w-full border-2 p-3 rounded-xl outline-none font-bold text-slate-700" 
-                    />
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase">Date</label>
+                    <input type="date" onBlur={() => takeSnapshot()} value={activeNode.data.executionDate} onChange={(e) => setNodes(nds => nds.map(n => n.id === selectedNodeId ? { ...n, data: { ...n.data, executionDate: e.target.value } } : n))} className="w-full border-2 p-2 md:p-3 rounded-xl outline-none font-bold text-slate-700 text-sm md:text-base" />
                   </div>
                 </div>
               </div>
-              <div className="w-1/3 space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase">Description</label>
-                <textarea 
-                  onBlur={() => takeSnapshot()}
-                  rows={4} 
-                  value={activeNode.data.description} 
-                  onChange={(e) => setNodes(nds => nds.map(n => n.id === selectedNodeId ? { ...n, data: { ...n.data, description: e.target.value } } : n))} 
-                  className="w-full border-2 p-3 rounded-xl outline-none text-sm font-medium" 
-                />
+              <div className="md:w-1/3 space-y-1 pb-10 md:pb-0">
+                <label className="text-[10px] font-black text-slate-400 uppercase">Description</label>
+                <textarea onBlur={() => takeSnapshot()} rows={window.innerWidth < 768 ? 6 : 4} value={activeNode.data.description} onChange={(e) => setNodes(nds => nds.map(n => n.id === selectedNodeId ? { ...n, data: { ...n.data, description: e.target.value } } : n))} className="w-full border-2 p-3 rounded-xl outline-none text-sm font-medium" />
               </div>
             </div>
           )}
         </div>
 
-        <div className="flex-1">
+        <div className="flex-1 min-h-0">
           <ReactFlow
             nodes={nodes.map((n) => ({ ...n, data: { ...n.data, selected: n.id === selectedNodeId, onDelete: onDeleteNode } }))}
             edges={edges}
@@ -302,7 +275,7 @@ const Workflows = () => {
             fitView
           >
             <Background color="#cbd5e1" gap={25} variant="dots" />
-            <Controls />
+            <Controls position="bottom-right" />
           </ReactFlow>
         </div>
       </main>
