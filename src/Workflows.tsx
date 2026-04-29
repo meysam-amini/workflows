@@ -180,7 +180,7 @@ const Workflows = () => {
         
         {/* HEADER */}
         <header className="h-14 md:h-16 border-b bg-[#0f172a] text-white flex items-center justify-between px-4 md:px-8 z-[130] relative flex-shrink-0">
-          <h1 className="font-black tracking-tighter text-sm md:text-lg uppercase">SDLC Flow</h1>
+          <h1 className="font-black tracking-tighter text-sm md:text-lg uppercase">Flow Builder</h1>
           
           <div className="flex items-center gap-2">
             <div className="flex md:hidden gap-1 mr-2">
