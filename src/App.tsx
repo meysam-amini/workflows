@@ -1,7 +1,3 @@
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
 import { Welcome } from './Welcome.tsx'
 import { UserCard } from './UserCard.tsx'
 import { CardView } from './CardView.tsx'
@@ -9,10 +5,13 @@ import { Greeting } from './Greeting.tsx'
 import { DynamicListExample } from './DynamicListExample.tsx'
 import { MultipleInputsForm } from './MultipleInputsForm.tsx'
 import { FormSubmission } from './FormSubmission.tsx'
+import { useNavigate } from 'react-router-dom'
 
 
 
 function App() {
+
+  const navigate = useNavigate();
 
   return (
 
@@ -43,6 +42,17 @@ function App() {
       _____________________________________
       <h2>Form Submission Example:</h2>
       <FormSubmission />
+
+      _____________________________________
+      {/* Navigation buttons */}
+      <nav style={{ padding: '20px', background: '#f0f0f0', marginBottom: '20px' }}>
+        <button
+          onClick={() => navigate('/workflows')}
+          style={{ padding: '8px 16px', cursor: 'pointer' }}
+        >
+          Workflows
+        </button>
+      </nav>
     </>
   )
 

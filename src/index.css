@@ -1,111 +1,127 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+@import "tailwindcss";
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+@theme {
+  /* Tailwind v4 Theme Extensions */
+  --color-slate-950: #0f172a;
+  --font-sans: "Inter", ui-sans-serif, system-ui;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  /* Your Design System Variables */
+  --color-accent: #aa3bff;
+  --color-accent-bg: rgba(170, 59, 255, 0.1);
+  --color-accent-border: rgba(170, 59, 255, 0.5);
+  --color-border: #e5e4e7;
+  --color-text-main: #6b6375;
+  --color-text-heading: #08060d;
+  --color-code-bg: #f4f3ec;
+  
+  --shadow-custom: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 }
 
+/* Dark Mode Overrides for your custom variables */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+  @theme {
+    --color-text-main: #9ca3af;
+    --color-text-heading: #f3f4f6;
+    --color-border: #2e303a;
+    --color-code-bg: #1f2028;
+    --color-accent: #c084fc;
+    --color-accent-bg: rgba(192, 132, 252, 0.15);
   }
 }
 
-body {
-  margin: 0;
+@layer base {
+  body {
+    @apply m-0 bg-slate-50 text-base antialiased;
+    color: var(--color-text-main);
+    font-family: var(--font-sans);
+    line-height: 1.45;
+  }
+
+  button {
+    @apply cursor-pointer px-4 py-2 rounded-md transition-all duration-200 font-medium active:scale-95;
+    background-color: var(--color-accent-bg);
+    color: var(--color-accent);
+    border: 1px solid var(--color-accent-border);
+  }
+
+  button:hover {
+    background-color: var(--color-accent);
+    color: white;
+  }
+
+  h1 {
+    @apply text-5xl font-medium mt-8 mb-8 lg:text-4xl;
+    color: var(--color-text-heading);
+    letter-spacing: -1.68px;
+  }
+
+  h2 {
+    @apply text-2xl font-medium mb-2;
+    color: var(--color-text-heading);
+    letter-spacing: -0.24px;
+  }
+
+  code {
+    @apply px-2 py-1 rounded text-sm;
+    background: var(--color-code-bg);
+    color: var(--color-text-heading);
+    font-family: ui-monospace, monospace;
+  }
+
+  /* Global Button Reset for your App.tsx navigation */
+  button {
+    @apply cursor-pointer transition-all duration-200 active:scale-95;
+  }
 }
 
+/* --- Workflow Specific Styles --- */
+.canvas-grid {
+  background-image: radial-gradient(#e2e8f0 1px, transparent 0);
+  background-size: 24px 24px;
+  background-position: -19px -19px;
+}
+
+.node-shadow {
+  box-shadow: var(--shadow-custom);
+}
+
+/* --- Layout & Legacy Component Styles --- */
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+  @apply w-full max-w-[1126px] mx-auto text-center flex flex-col min-h-screen border-x;
+  border-color: var(--color-border);
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
 .counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+  @apply inline-flex text-base px-3 py-1.5 rounded-md border-2 border-transparent transition-colors mb-6;
+  color: var(--color-accent);
+  background: var(--color-accent-bg);
+  font-family: ui-monospace, monospace;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.counter:hover {
+  border-color: var(--color-accent-border);
+}
+
+.cardview {
+  @apply px-4 py-2 rounded-lg bg-stone-500 text-red-200 inline-block;
+}
+
+/* Hero Section (Vite/React Logo Animation) */
+.hero {
+  @apply relative;
+}
+
+.hero .framework, .hero .vite {
+  @apply absolute;
+}
+
+.hero .framework {
+  @apply z-10 top-8 h-7 scale-150;
+  transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg);
+}
+
+/* --- Spacer --- */
+#spacer {
+  @apply h-22 border-t lg:h-12;
+  border-color: var(--color-border);
 }
