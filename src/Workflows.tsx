@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState, useEffect } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ReactFlow,
   useNodesState,
@@ -27,18 +27,12 @@ import {
   Plus
 } from 'lucide-react';
 
-/* =========================================================
-   1. VISUAL CONFIGURATION
-========================================================= */
 const NODE_CONFIG: Record<string, any> = {
   Trigger: { icon: <Zap size={16} />, headerBg: 'bg-indigo-50', iconColor: 'text-indigo-600', border: 'border-indigo-100' },
   Condition: { icon: <ShieldCheck size={16} />, headerBg: 'bg-orange-50', iconColor: 'text-orange-500', border: 'border-orange-100' },
   Task: { icon: <CheckCircle2 size={16} />, headerBg: 'bg-green-50', iconColor: 'text-green-600', border: 'border-green-100' },
 };
 
-/* =========================================================
-   2. CUSTOM NODE COMPONENT
-========================================================= */
 const WorkflowNode = ({ data, id }: any) => {
   const config = NODE_CONFIG[data.type] || NODE_CONFIG.Task;
 
@@ -84,16 +78,12 @@ const WorkflowNode = ({ data, id }: any) => {
 
 const nodeTypes = { workflowNode: WorkflowNode };
 
-/* =========================================================
-   3. MAIN COMPONENT
-========================================================= */
 const Workflows = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-  // --- HISTORY SYSTEM ---
   const [history, setHistory] = useState<{ nodes: Node[]; edges: Edge[] }[]>([{ nodes: [], edges: [] }]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
@@ -104,42 +94,34 @@ const Workflows = () => {
       nodes: JSON.parse(JSON.stringify(nextNodes || nodes)),
       edges: JSON.parse(JSON.stringify(nextEdges || edges)),
     };
-    setHistory((prev) => {
-      const newStack = prev.slice(0, historyIndex + 1);
-      return [...newStack, snapshot];
-    });
+    setHistory((prev) => [...prev.slice(0, historyIndex + 1), snapshot]);
     setHistoryIndex((prev) => prev + 1);
   }, [nodes, edges, historyIndex]);
 
   const undo = useCallback(() => {
     if (historyIndex > 0) {
-      const prevIndex = historyIndex - 1;
-      const { nodes: hNodes, edges: hEdges } = history[prevIndex];
-      setNodes(JSON.parse(JSON.stringify(hNodes)));
-      setEdges(JSON.parse(JSON.stringify(hEdges)));
-      setHistoryIndex(prevIndex);
+      const prev = history[historyIndex - 1];
+      setNodes(JSON.parse(JSON.stringify(prev.nodes)));
+      setEdges(JSON.parse(JSON.stringify(prev.edges)));
+      setHistoryIndex(historyIndex - 1);
       setSelectedNodeId(null);
     }
   }, [historyIndex, history, setNodes, setEdges]);
 
   const redo = useCallback(() => {
     if (historyIndex < history.length - 1) {
-      const nextIndex = historyIndex + 1;
-      const { nodes: hNodes, edges: hEdges } = history[nextIndex];
-      setNodes(JSON.parse(JSON.stringify(hNodes)));
-      setEdges(JSON.parse(JSON.stringify(hEdges)));
-      setHistoryIndex(nextIndex);
+      const next = history[historyIndex + 1];
+      setNodes(JSON.parse(JSON.stringify(next.nodes)));
+      setEdges(JSON.parse(JSON.stringify(next.edges)));
+      setHistoryIndex(historyIndex + 1);
     }
   }, [historyIndex, history, setNodes, setEdges]);
 
-  // --- SAVE & LOGIC ---
   const onSave = useCallback(() => {
     if (!rfInstance) return;
     console.log("Full Flow Object:", rfInstance.toObject());
-    alert("Flow data exported to console.");
   }, [rfInstance]);
 
-  // --- HANDLERS ---
   const onDeleteNode = useCallback((id: string) => {
     const nextNodes = nodes.filter((n) => n.id !== id);
     const nextEdges = edges.filter((e) => e.source !== id && e.target !== id);
@@ -193,37 +175,17 @@ const Workflows = () => {
   return (
     <div className="flex flex-col md:flex-row h-screen w-full bg-[#f8fafc] font-sans overflow-hidden">
       
-      {/* SIDEBAR / BOTTOM BAR */}
-      <aside className="w-full md:w-72 border-b md:border-b-0 md:border-r bg-white p-4 md:p-6 flex flex-row md:flex-col justify-between shadow-xl z-50 order-2 md:order-1">
-        <div className="flex flex-row md:flex-col gap-3 md:gap-4 overflow-x-auto md:overflow-visible w-full pb-2 md:pb-0">
-          <h2 className="hidden md:block font-black text-slate-800 text-lg uppercase mb-2 tracking-tighter">Nodes</h2>
-          {['Trigger', 'Condition', 'Task'].map((type) => (
-            <button 
-              key={type} 
-              draggable 
-              onDragStart={(e) => e.dataTransfer.setData('application/reactflow', type)}
-              onClick={() => { if(window.innerWidth < 768) addNodeMobile(type) }} 
-              className="flex-shrink-0 cursor-grab p-2 md:p-4 rounded-xl border-2 bg-slate-50 border-slate-100 font-bold text-xs md:text-sm text-slate-600 hover:border-indigo-300 transition-all flex items-center gap-2"
-            >
-              <Plus size={14} className="md:hidden"/> {type} Node
-            </button>
-          ))}
-        </div>
-
-        <div className="hidden md:flex border-t pt-6 gap-2">
-          <button onClick={undo} disabled={historyIndex <= 0} className="flex-1 p-3 rounded-xl border-2 border-slate-100 disabled:opacity-20 transition-all flex justify-center"><Undo2 size={18} /></button>
-          <button onClick={redo} disabled={historyIndex >= history.length - 1} className="flex-1 p-3 rounded-xl border-2 border-slate-100 disabled:opacity-20 transition-all flex justify-center"><Redo2 size={18} /></button>
-        </div>
-      </aside>
-
-      <main className="flex-1 flex flex-col relative bg-white order-1 md:order-2 overflow-hidden">
-        <header className="h-14 md:h-16 border-b bg-[#0f172a] text-white flex items-center justify-between px-4 md:px-8 z-50">
-          <h1 className="font-black tracking-tighter text-sm md:text-lg uppercase">Flow Builder</h1>
+      {/* MAIN SECTION (Header + Content) */}
+      <main className="flex-1 flex flex-col relative bg-white order-1 overflow-hidden">
+        
+        {/* HEADER */}
+        <header className="h-14 md:h-16 border-b bg-[#0f172a] text-white flex items-center justify-between px-4 md:px-8 z-[130] relative flex-shrink-0">
+          <h1 className="font-black tracking-tighter text-sm md:text-lg uppercase">SDLC Flow</h1>
           
           <div className="flex items-center gap-2">
             <div className="flex md:hidden gap-1 mr-2">
-              <button onClick={undo} disabled={historyIndex <= 0} className="p-2 rounded-lg bg-slate-800 border-none disabled:opacity-30 flex items-center"><Undo2 size={16}/></button>
-              <button onClick={redo} disabled={historyIndex >= history.length - 1} className="p-2 rounded-lg bg-slate-800 border-none disabled:opacity-30 flex items-center"><Redo2 size={16}/></button>
+              <button onClick={undo} disabled={historyIndex <= 0} className="p-2 rounded-lg bg-slate-800 border-none disabled:opacity-30 flex items-center active:bg-slate-700"><Undo2 size={16}/></button>
+              <button onClick={redo} disabled={historyIndex >= history.length - 1} className="p-2 rounded-lg bg-slate-800 border-none disabled:opacity-30 flex items-center active:bg-slate-700"><Redo2 size={16}/></button>
             </div>
             <button onClick={onSave} className="bg-indigo-600 hover:bg-indigo-500 px-3 md:px-6 py-1.5 md:py-2 rounded-lg font-bold text-xs md:text-sm flex items-center gap-2 transition-colors">
               <Database size={14} /> <span className="hidden sm:inline">Save</span>
@@ -231,13 +193,29 @@ const Workflows = () => {
           </div>
         </header>
 
-        {/* PROPERTY OVERLAY */}
-        <div className={`fixed inset-0 md:absolute md:inset-auto md:left-0 md:right-0 bg-white border-b-4 border-indigo-500 shadow-2xl z-[100] transition-all duration-300 ${activeNode ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`} style={{ height: window.innerWidth < 768 ? '100%' : '280px', top: window.innerWidth < 768 ? '0' : 'auto' }}>
+        {/* MOBILE PALETTE (Immediately below Header on small screens) */}
+        <aside className="md:hidden w-full border-b bg-white p-3 flex flex-row gap-2 overflow-x-auto z-[110] relative flex-shrink-0 shadow-sm">
+          {['Trigger', 'Condition', 'Task'].map((type) => (
+            <button 
+              key={type} 
+              onClick={() => addNodeMobile(type)} 
+              className="flex-shrink-0 px-4 py-2 rounded-xl border-2 bg-slate-50 border-slate-100 font-bold text-[10px] uppercase text-slate-600 flex items-center gap-2 active:bg-indigo-50 active:border-indigo-200"
+            >
+              <Plus size={12}/> {type}
+            </button>
+          ))}
+        </aside>
+
+        {/* PROPERTY DRAWER (Slides over the mobile palette and canvas) */}
+        <div 
+          className={`fixed inset-x-0 top-0 bg-white border-b-4 border-indigo-500 shadow-2xl z-[120] transition-transform duration-500 ease-in-out ${activeNode ? 'translate-y-14 md:translate-y-16' : '-translate-y-full'}`} 
+          style={{ height: window.innerWidth < 768 ? 'calc(100% - 3.5rem)' : '280px' }}
+        >
           {activeNode && (
-            <div className="p-6 md:p-8 max-w-6xl mx-auto flex flex-col md:flex-row gap-6 md:gap-12 relative h-full overflow-y-auto">
-              <button onClick={() => setSelectedNodeId(null)} className="absolute right-4 top-4 p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-600"><X size={20} /></button>
+            <div className="p-6 md:p-8 max-w-6xl mx-auto flex flex-col md:flex-row gap-6 md:gap-12 relative h-full overflow-y-auto pt-10 md:pt-8">
+              <button onClick={() => setSelectedNodeId(null)} className="absolute right-4 top-4 p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors"><X size={20} /></button>
               
-              <div className="flex-1 space-y-4 md:space-y-6 mt-4 md:mt-0">
+              <div className="flex-1 space-y-4 md:space-y-6">
                 <h2 className="font-black text-slate-800 text-xl uppercase italic">Edit {activeNode.data.type}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                   <div className="space-y-1">
@@ -258,7 +236,8 @@ const Workflows = () => {
           )}
         </div>
 
-        <div className="flex-1 min-h-0">
+        {/* FLOW CANVAS */}
+        <div className="flex-1 min-h-0 relative z-10">
           <ReactFlow
             nodes={nodes.map((n) => ({ ...n, data: { ...n.data, selected: n.id === selectedNodeId, onDelete: onDeleteNode } }))}
             edges={edges}
@@ -279,6 +258,28 @@ const Workflows = () => {
           </ReactFlow>
         </div>
       </main>
+
+      {/* DESKTOP SIDEBAR (Hidden on Mobile) */}
+      <aside className="hidden md:flex w-72 border-r bg-white p-6 flex-col justify-between shadow-xl z-50 order-first">
+        <div className="flex flex-col gap-4">
+          <h2 className="font-black text-slate-800 text-lg uppercase mb-2 tracking-tighter">Nodes</h2>
+          {['Trigger', 'Condition', 'Task'].map((type) => (
+            <button 
+              key={type} 
+              draggable 
+              onDragStart={(e) => e.dataTransfer.setData('application/reactflow', type)}
+              className="cursor-grab p-4 rounded-xl border-2 bg-slate-50 border-slate-100 font-bold text-sm text-slate-600 hover:border-indigo-300 transition-all flex items-center gap-2"
+            >
+              {type} Node
+            </button>
+          ))}
+        </div>
+
+        <div className="flex border-t pt-6 gap-2">
+          <button onClick={undo} disabled={historyIndex <= 0} className="flex-1 p-3 rounded-xl border-2 border-slate-100 disabled:opacity-20 transition-all flex justify-center hover:bg-slate-50"><Undo2 size={18} /></button>
+          <button onClick={redo} disabled={historyIndex >= history.length - 1} className="flex-1 p-3 rounded-xl border-2 border-slate-100 disabled:opacity-20 transition-all flex justify-center hover:bg-slate-50"><Redo2 size={18} /></button>
+        </div>
+      </aside>
     </div>
   );
 };
