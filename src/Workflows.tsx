@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState, useEffect } from 'react';
 import {
   ReactFlow,
   useNodesState,
@@ -11,396 +11,301 @@ import {
   Handle,
   Position,
   ReactFlowInstance,
-  Edge,
   Node,
+  Edge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import {
-  Zap,
-  ShieldCheck,
-  CheckCircle2,
-  Database,
-  Clock,
-  FileText,
-  Bell,
-  X,
+import { 
+  Zap, 
+  ShieldCheck, 
+  CheckCircle2, 
+  Database, 
+  X, 
+  Trash2,
+  Undo2,
+  Redo2 
 } from 'lucide-react';
 
 /* =========================================================
-   Custom Workflow Node
+   1. VISUAL CONFIGURATION
 ========================================================= */
+const NODE_CONFIG: Record<string, any> = {
+  Trigger: { icon: <Zap size={16} />, headerBg: 'bg-indigo-50', iconColor: 'text-indigo-600', border: 'border-indigo-100' },
+  Condition: { icon: <ShieldCheck size={16} />, headerBg: 'bg-orange-50', iconColor: 'text-orange-500', border: 'border-orange-100' },
+  Task: { icon: <CheckCircle2 size={16} />, headerBg: 'bg-green-50', iconColor: 'text-green-600', border: 'border-green-100' },
+};
 
-const WorkflowNode = ({ data }: any) => {
+/* =========================================================
+   2. CUSTOM NODE COMPONENT
+========================================================= */
+const WorkflowNode = ({ data, id }: any) => {
+  const config = NODE_CONFIG[data.type] || NODE_CONFIG.Task;
+
   return (
-    <div
-      className={`
-        min-w-[240px]
-        rounded-2xl
-        border-2
-        bg-white
-        shadow-lg
-        px-4
-        py-4
-        transition-all
-        hover:border-indigo-400
-        ${data.selected ? 'border-indigo-500' : 'border-slate-200'}
-      `}
-    >
-      <Handle type="target" position={Position.Top} className="w-2 h-2 bg-slate-400" />
-      <Handle type="source" position={Position.Bottom} className="w-2 h-2 bg-slate-400" />
-      <Handle type="target" position={Position.Left} className="w-2 h-2 bg-slate-400" />
-      <Handle type="source" position={Position.Right} className="w-2 h-2 bg-slate-400" />
+    <div className={`min-w-[260px] rounded-xl border-2 bg-white shadow-sm overflow-visible group ${data.selected ? 'border-indigo-500 ring-4 ring-indigo-50' : 'border-slate-200'}`}>
+      <button 
+        onClick={(e) => { e.stopPropagation(); data.onDelete(id); }}
+        className="absolute -top-3 -right-3 p-1.5 bg-white border-2 border-red-100 text-red-500 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white z-[60]"
+      >
+        <Trash2 size={14} />
+      </button>
 
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <div className={`p-2 rounded-lg ${data.color}`}>
-            {data.icon}
+      <Handle type="target" position={Position.Top} className="w-3 h-3 bg-slate-300 border-2 border-white" />
+      <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-slate-300 border-2 border-white" />
+
+      {data.type === 'Condition' ? (
+        <div className="absolute right-[-12px] top-1/2 -translate-y-1/2 flex flex-col gap-8 z-50">
+          <div className="relative flex items-center justify-end">
+            <span className="mr-2 text-[9px] font-black text-green-600 bg-green-50 px-1 rounded border border-green-100 uppercase">Yes</span>
+            <Handle type="source" position={Position.Right} id="yes" className="w-4 h-4 bg-green-500 border-2 border-white !static" />
           </div>
-          <div>
-            <p className="text-[10px] uppercase font-bold tracking-wide text-slate-400">
-              {data.type}
-            </p>
-            <p className="font-bold text-sm text-slate-800">
-              {data.title || 'Untitled Step'}
-            </p>
+          <div className="relative flex items-center justify-end">
+            <span className="mr-2 text-[9px] font-black text-red-600 bg-red-50 px-1 rounded border border-red-100 uppercase">No</span>
+            <Handle type="source" position={Position.Right} id="no" className="w-4 h-4 bg-green-500 border-2 border-white !static" />
           </div>
         </div>
+      ) : (
+        <Handle type="source" position={Position.Right} id="r" className="w-3 h-3 bg-slate-300 border-2 border-white" />
+      )}
 
-        <p className="text-xs text-slate-500 line-clamp-2">
-          {data.description || 'No description added'}
-        </p>
+      <div className={`flex items-center gap-3 px-4 py-3 border-b-2 ${config.headerBg} ${config.border}`}>
+        <div className={`p-1.5 rounded-lg bg-white shadow-sm ${config.iconColor}`}>{config.icon}</div>
+        <div className="flex-1 font-bold text-slate-800 text-sm truncate">{data.title || 'Step'}</div>
+      </div>
 
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <Clock size={12} />
-          <span>{data.executionDate || 'No execution date'}</span>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <Bell size={12} />
-          <span>{data.reminderDate || 'No reminder date'}</span>
-        </div>
+      <div className="p-4 bg-white space-y-2">
+        <div className="text-[11px] text-slate-500 truncate italic">{data.description || 'No description...'}</div>
+        <div className="text-[11px] font-bold text-indigo-500">{data.executionDate || 'No date set'}</div>
       </div>
     </div>
   );
 };
 
-const nodeTypes = {
-  workflowNode: WorkflowNode,
-};
+const nodeTypes = { workflowNode: WorkflowNode };
 
 /* =========================================================
-   Main Workflow Builder
+   3. MAIN COMPONENT
 ========================================================= */
-
 const Workflows = () => {
-  const reactFlowWrapper = useRef<HTMLDivElement>(null);
-
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-  const selectedNode = useMemo(
-    () => nodes.find((n) => n.id === selectedNodeId),
-    [nodes, selectedNodeId]
-  );
+  // --- HISTORY SYSTEM ---
+  const [history, setHistory] = useState<{ nodes: Node[]; edges: Edge[] }[]>([{ nodes: [], edges: [] }]);
+  const [historyIndex, setHistoryIndex] = useState(0);
 
-  /* =========================================================
-     Helpers
-  ========================================================= */
+  const activeNode = nodes.find((n) => n.id === selectedNodeId);
 
-  const getNodeVisuals = (type: string) => {
-    if (type === 'Trigger') {
-      return {
-        icon: <Zap size={14} />,
-        color: 'bg-indigo-50 text-indigo-600',
-      };
-    }
-
-    if (type === 'Condition') {
-      return {
-        icon: <ShieldCheck size={14} />,
-        color: 'bg-orange-50 text-orange-500',
-      };
-    }
-
-    return {
-      icon: <CheckCircle2 size={14} />,
-      color: 'bg-green-50 text-green-600',
+  const takeSnapshot = useCallback((nextNodes?: Node[], nextEdges?: Edge[]) => {
+    const snapshot = {
+      nodes: JSON.parse(JSON.stringify(nextNodes || nodes)),
+      edges: JSON.parse(JSON.stringify(nextEdges || edges)),
     };
-  };
+    setHistory((prev) => {
+      const newStack = prev.slice(0, historyIndex + 1);
+      return [...newStack, snapshot];
+    });
+    setHistoryIndex((prev) => prev + 1);
+  }, [nodes, edges, historyIndex]);
 
-  const updateNodeData = (nodeId: string, field: string, value: string) => {
-    setNodes((nds) =>
-      nds.map((node) => {
-        if (node.id !== nodeId) return node;
+  const undo = useCallback(() => {
+    if (historyIndex > 0) {
+      const prevIndex = historyIndex - 1;
+      const { nodes: hNodes, edges: hEdges } = history[prevIndex];
+      setNodes(JSON.parse(JSON.stringify(hNodes)));
+      setEdges(JSON.parse(JSON.stringify(hEdges)));
+      setHistoryIndex(prevIndex);
+      setSelectedNodeId(null);
+    }
+  }, [historyIndex, history, setNodes, setEdges]);
 
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            [field]: value,
-          },
-        };
-      })
-    );
-  };
+  const redo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const nextIndex = historyIndex + 1;
+      const { nodes: hNodes, edges: hEdges } = history[nextIndex];
+      setNodes(JSON.parse(JSON.stringify(hNodes)));
+      setEdges(JSON.parse(JSON.stringify(hEdges)));
+      setHistoryIndex(nextIndex);
+    }
+  }, [historyIndex, history, setNodes, setEdges]);
 
-  /* =========================================================
-     Edge Connection
-  ========================================================= */
+  // --- SAVE & EXPORT LOGIC ---
+  const onSave = useCallback(() => {
+    if (!rfInstance) return;
 
-  const onConnect = useCallback(
-    (params: Connection) => {
-      const sourceNode = nodes.find((n) => n.id === params.source);
+    // This captures EVERYTING: positions, types, data, and edge logic
+    const flowObject = rfInstance.toObject();
 
-      const isConditional = sourceNode?.data?.type === 'Condition';
+    console.log("%c--- COMPLETE FLOW EXPORT (JSON READY) ---", "color: #10b981; font-weight: bold; font-size: 14px;");
+    console.log("Full Object:", flowObject);
 
-      setEdges((eds) =>
-        addEdge(
-          {
-            ...params,
-            animated: true,
-            label: isConditional ? 'Condition' : '',
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              color: '#6366f1',
-            },
-            style: {
-              stroke: '#6366f1',
-              strokeWidth: 2,
-            },
-          },
-          eds
-        )
-      );
-    },
-    [nodes]
-  );
+    console.group("Detailed Positioning & Data");
+    flowObject.nodes.forEach((node) => {
+      console.log(`[${node.id}] "${node.data.title}" at X: ${Math.round(node.position.x)}, Y: ${Math.round(node.position.y)}`);
+    });
+    console.groupEnd();
 
-  /* =========================================================
-     Drag + Drop
-  ========================================================= */
+    console.group("Connectivity Map");
+    flowObject.edges.forEach((edge) => {
+      const src = flowObject.nodes.find((n) => n.id === edge.source);
+      const tar = flowObject.nodes.find((n) => n.id === edge.target);
+      console.log(`${src?.data.title || edge.source} (${edge.sourceHandle || 'default'}) -> ${tar?.data.title || edge.target}`);
+    });
+    console.groupEnd();
 
-  const onDragStart = (event: React.DragEvent, nodeType: string) => {
-    event.dataTransfer.setData('application/reactflow', nodeType);
-    event.dataTransfer.effectAllowed = 'move';
-  };
+    // To load this back later: setNodes(flowObject.nodes); setEdges(flowObject.edges);
+  }, [rfInstance]);
 
-  const onDrop = useCallback(
-    (event: React.DragEvent) => {
-      event.preventDefault();
+  // --- HANDLERS ---
+  const onDeleteNode = useCallback((id: string) => {
+    const nextNodes = nodes.filter((n) => n.id !== id);
+    const nextEdges = edges.filter((e) => e.source !== id && e.target !== id);
+    takeSnapshot(nextNodes, nextEdges);
+    setNodes(nextNodes);
+    setEdges(nextEdges);
+    setSelectedNodeId(null);
+  }, [nodes, edges, takeSnapshot, setNodes, setEdges]);
 
-      if (!reactFlowWrapper.current || !rfInstance) return;
+  const onConnect = useCallback((params: Connection) => {
+    let edgeColor = params.sourceHandle === 'yes' ? '#22c55e' : params.sourceHandle === 'no' ? '#ef4444' : '#94a3b8';
+    const newEdge = { 
+      ...params, 
+      type: 'smoothstep', 
+      label: params.sourceHandle?.toUpperCase(),
+      labelStyle: { fill: edgeColor, fontWeight: 700, fontSize: 10 },
+      style: { stroke: edgeColor, strokeWidth: 3 },
+      markerEnd: { type: MarkerType.ArrowClosed, color: edgeColor } 
+    };
+    const nextEdges = addEdge(newEdge, edges);
+    takeSnapshot(nodes, nextEdges);
+    setEdges(nextEdges);
+  }, [nodes, edges, takeSnapshot, setEdges]);
 
-      const type = event.dataTransfer.getData('application/reactflow');
+  const onDrop = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    if (!rfInstance) return;
 
-      const position = rfInstance.screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
-      });
+    const type = event.dataTransfer.getData('application/reactflow');
+    const position = rfInstance.screenToFlowPosition({ x: event.clientX, y: event.clientY });
 
-      const visuals = getNodeVisuals(type);
-
-      const newNode: Node = {
-        id: `step_${Date.now()}`,
-        type: 'workflowNode',
-        position,
-        data: {
-          title: `New ${type}`,
-          description: '',
-          executionDate: '',
-          reminderDate: '',
-          conditionLabel: '',
-          type,
-          ...visuals,
-        },
-      };
-
-      setNodes((nds) => nds.concat(newNode));
-      setSelectedNodeId(newNode.id);
-    },
-    [rfInstance]
-  );
-
-  /* =========================================================
-     Save Flow
-  ========================================================= */
-
-  const saveFlow = () => {
-    const payload = {
-      workflowName: 'Agent Workflow',
-      steps: nodes.map((node) => ({
-        id: node.id,
-        title: node.data.title,
-        description: node.data.description,
-        executionDate: node.data.executionDate,
-        reminderDate: node.data.reminderDate,
-        type: node.data.type,
-      })),
-      connections: edges.map((edge: Edge) => ({
-        from: edge.source,
-        to: edge.target,
-        type: edge.label ? 'conditional' : 'direct',
-        condition: edge.label || null,
-      })),
+    const newNode: Node = {
+      id: `node_${Date.now()}`,
+      type: 'workflowNode',
+      position,
+      data: { type, title: type, executionDate: '', description: '', onDelete: onDeleteNode },
     };
 
-    console.log('Workflow Payload:', JSON.stringify(payload, null, 2));
-    alert('Workflow saved. Check console for payload.');
-  };
-
-  /* =========================================================
-     UI
-  ========================================================= */
+    const nextNodes = nodes.concat(newNode);
+    takeSnapshot(nextNodes, edges);
+    setNodes(nextNodes);
+  }, [rfInstance, nodes, edges, takeSnapshot, setNodes, onDeleteNode]);
 
   return (
-    <div className="flex h-screen w-full bg-slate-50 overflow-hidden font-sans">
-      {/* LEFT PALETTE */}
-      <aside className="w-64 border-r bg-white p-6 flex flex-col gap-4">
-        <h2 className="font-bold text-slate-800">Node Palette</h2>
-
-        <div
-          draggable
-          onDragStart={(e) => onDragStart(e, 'Trigger')}
-          className="p-3 rounded-xl border bg-indigo-50 cursor-grab flex items-center gap-2"
-        >
-          <Zap size={16} /> Trigger Step
+    <div className="flex h-screen w-full bg-[#f8fafc] font-sans overflow-hidden">
+      <aside className="w-72 border-r bg-white p-6 flex flex-col justify-between shadow-xl z-50">
+        <div>
+          <h2 className="font-black text-slate-800 text-lg uppercase mb-6 tracking-tighter">Node Palette</h2>
+          <div className="space-y-4">
+            {['Trigger', 'Condition', 'Task'].map((type) => (
+              <div 
+                key={type} 
+                draggable 
+                onDragStart={(e) => e.dataTransfer.setData('application/reactflow', type)} 
+                className="cursor-grab p-4 rounded-xl border-2 bg-slate-50 border-slate-100 font-bold text-slate-600 hover:border-indigo-300 transition-all"
+              >
+                {type} Node
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div
-          draggable
-          onDragStart={(e) => onDragStart(e, 'Condition')}
-          className="p-3 rounded-xl border bg-orange-50 cursor-grab flex items-center gap-2"
-        >
-          <ShieldCheck size={16} /> Condition Step
-        </div>
-
-        <div
-          draggable
-          onDragStart={(e) => onDragStart(e, 'Task')}
-          className="p-3 rounded-xl border bg-green-50 cursor-grab flex items-center gap-2"
-        >
-          <CheckCircle2 size={16} /> Action Step
+        <div className="border-t pt-6 space-y-4">
+          <p className="text-[10px] font-black text-slate-400 uppercase text-center tracking-widest">History</p>
+          <div className="flex gap-2">
+            <button onClick={undo} disabled={historyIndex <= 0} className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-100 font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-20 transition-all">
+              <Undo2 size={18} /> Undo
+            </button>
+            <button onClick={redo} disabled={historyIndex >= history.length - 1} className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-100 font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-20 transition-all">
+              <Redo2 size={18} /> Redo
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* CENTER CANVAS */}
-      <main className="flex-1 flex flex-col" ref={reactFlowWrapper}>
-        <header className="h-16 border-b bg-[#0f172a] text-white flex items-center justify-between px-6">
-          <span className="font-bold">Agent Workflow Designer</span>
-
-          <button
-            onClick={saveFlow}
-            className="bg-indigo-600 px-4 py-2 rounded-lg flex items-center gap-2 font-bold"
-          >
-            <Database size={16} /> Save Flow
+      <main className="flex-1 flex flex-col relative bg-white">
+        <header className="h-16 border-b bg-[#0f172a] text-white flex items-center justify-between px-8 z-50">
+          <h1 className="font-black tracking-tighter text-lg uppercase">Flow Builder</h1>
+          <button onClick={onSave} className="bg-indigo-600 hover:bg-indigo-500 px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors">
+            <Database size={16} /> Save & Log Full State
           </button>
         </header>
 
+        {/* PROPERTIES PANEL */}
+        <div className={`absolute left-0 right-0 bg-white border-b-4 border-indigo-500 shadow-2xl z-40 transition-all duration-300 ${activeNode ? 'translate-y-16' : '-translate-y-full'}`} style={{ height: '280px' }}>
+          {activeNode && (
+            <div className="p-8 max-w-6xl mx-auto flex flex-row gap-12 relative">
+              <button onClick={() => setSelectedNodeId(null)} className="absolute right-4 top-4 p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-600"><X size={20} /></button>
+              <div className="flex-1 space-y-6">
+                <h2 className="font-black text-slate-800 text-xl uppercase italic">Edit {activeNode.data.type}</h2>
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase">Title</label>
+                    <input 
+                      onBlur={() => takeSnapshot()} 
+                      value={activeNode.data.title} 
+                      onChange={(e) => setNodes(nds => nds.map(n => n.id === selectedNodeId ? { ...n, data: { ...n.data, title: e.target.value } } : n))} 
+                      className="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-400 font-bold text-slate-700" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase">Date</label>
+                    <input 
+                      onBlur={() => takeSnapshot()}
+                      type="date" 
+                      value={activeNode.data.executionDate} 
+                      onChange={(e) => setNodes(nds => nds.map(n => n.id === selectedNodeId ? { ...n, data: { ...n.data, executionDate: e.target.value } } : n))} 
+                      className="w-full border-2 p-3 rounded-xl outline-none font-bold text-slate-700" 
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="w-1/3 space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase">Description</label>
+                <textarea 
+                  onBlur={() => takeSnapshot()}
+                  rows={4} 
+                  value={activeNode.data.description} 
+                  onChange={(e) => setNodes(nds => nds.map(n => n.id === selectedNodeId ? { ...n, data: { ...n.data, description: e.target.value } } : n))} 
+                  className="w-full border-2 p-3 rounded-xl outline-none text-sm font-medium" 
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="flex-1">
           <ReactFlow
-            nodes={nodes.map((n) => ({
-              ...n,
-              data: {
-                ...n.data,
-                selected: n.id === selectedNodeId,
-              },
-            }))}
+            nodes={nodes.map((n) => ({ ...n, data: { ...n.data, selected: n.id === selectedNodeId, onDelete: onDeleteNode } }))}
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onInit={setRfInstance}
             onDrop={onDrop}
+            onNodeDragStop={() => takeSnapshot()}
             onNodeClick={(_, node) => setSelectedNodeId(node.id)}
-            onDragOver={(e) => {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = 'move';
-            }}
+            onDragOver={(e) => e.preventDefault()}
             nodeTypes={nodeTypes}
+            snapToGrid={true}
             fitView
           >
-            <Background color="#cbd5e1" gap={20} />
+            <Background color="#cbd5e1" gap={25} variant="dots" />
             <Controls />
           </ReactFlow>
         </div>
       </main>
-
-      {/* RIGHT DRAWER */}
-      {selectedNode && (
-        <aside className="w-[380px] border-l bg-white p-6 overflow-y-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-bold text-slate-800">Step Properties</h2>
-            <button onClick={() => setSelectedNodeId(null)}>
-              <X size={18} />
-            </button>
-          </div>
-
-          <div className="space-y-5">
-            <div>
-              <label className="text-sm font-medium">Title</label>
-              <input
-                value={selectedNode.data.title || ''}
-                onChange={(e) =>
-                  updateNodeData(selectedNode.id, 'title', e.target.value)
-                }
-                className="w-full mt-1 border rounded-xl px-3 py-2"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">Description</label>
-              <textarea
-                rows={4}
-                value={selectedNode.data.description || ''}
-                onChange={(e) =>
-                  updateNodeData(selectedNode.id, 'description', e.target.value)
-                }
-                className="w-full mt-1 border rounded-xl px-3 py-2"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">Execution Date</label>
-              <input
-                type="datetime-local"
-                value={selectedNode.data.executionDate || ''}
-                onChange={(e) =>
-                  updateNodeData(selectedNode.id, 'executionDate', e.target.value)
-                }
-                className="w-full mt-1 border rounded-xl px-3 py-2"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">Reminder Date</label>
-              <input
-                type="datetime-local"
-                value={selectedNode.data.reminderDate || ''}
-                onChange={(e) =>
-                  updateNodeData(selectedNode.id, 'reminderDate', e.target.value)
-                }
-                className="w-full mt-1 border rounded-xl px-3 py-2"
-              />
-            </div>
-
-            {selectedNode.data.type === 'Condition' && (
-              <div>
-                <label className="text-sm font-medium">Condition Label</label>
-                <input
-                  value={selectedNode.data.conditionLabel || ''}
-                  onChange={(e) =>
-                    updateNodeData(selectedNode.id, 'conditionLabel', e.target.value)
-                  }
-                  placeholder="Approved / Rejected"
-                  className="w-full mt-1 border rounded-xl px-3 py-2"
-                />
-              </div>
-            )}
-          </div>
-        </aside>
-      )}
     </div>
   );
 };

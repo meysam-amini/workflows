@@ -17,7 +17,7 @@
   --shadow-custom: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 }
 
-/* Dark Mode Overrides for your custom variables */
+/* Dark Mode Overrides */
 @media (prefers-color-scheme: dark) {
   @theme {
     --color-text-main: #9ca3af;
@@ -30,8 +30,9 @@
 }
 
 @layer base {
-  body {
-    @apply m-0 bg-slate-50 text-base antialiased;
+  /* Ensure the container fills the entire viewport */
+  html, body {
+    @apply m-0 p-0 w-full h-full overflow-hidden bg-slate-50 antialiased;
     color: var(--color-text-main);
     font-family: var(--font-sans);
     line-height: 1.45;
@@ -67,11 +68,6 @@
     color: var(--color-text-heading);
     font-family: ui-monospace, monospace;
   }
-
-  /* Global Button Reset for your App.tsx navigation */
-  button {
-    @apply cursor-pointer transition-all duration-200 active:scale-95;
-  }
 }
 
 /* --- Workflow Specific Styles --- */
@@ -85,12 +81,14 @@
   box-shadow: var(--shadow-custom);
 }
 
-/* --- Layout & Legacy Component Styles --- */
+/* --- Layout FIXED FOR FULL WINDOW --- */
 #root {
-  @apply w-full max-w-[1126px] mx-auto text-center flex flex-col min-h-screen border-x;
-  border-color: var(--color-border);
+  /* Removed max-width and margin-auto to allow full edge-to-edge bleed */
+  @apply w-full h-full flex flex-col;
+  min-height: 100vh;
 }
 
+/* --- Component Styles --- */
 .counter {
   @apply inline-flex text-base px-3 py-1.5 rounded-md border-2 border-transparent transition-colors mb-6;
   color: var(--color-accent);
@@ -106,7 +104,7 @@
   @apply px-4 py-2 rounded-lg bg-stone-500 text-red-200 inline-block;
 }
 
-/* Hero Section (Vite/React Logo Animation) */
+/* Hero Section */
 .hero {
   @apply relative;
 }
